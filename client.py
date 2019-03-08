@@ -406,8 +406,86 @@ async def _azerite_traits(ctx, class_name:str):
 async def _trinkets(ctx, class_name:str):
     msg = await bot.send_message(ctx.message.channel,
         embed=discord.Embed(
-            title="개발중", color=COLOR_INFO,
-            description="아직 명령어가 추가되지 않았습니다."))
+            title="불러오는 중", color=COLOR_WAIT,
+            description="로그 정보를 불러오는 중입니다."))
+
+    kr_class_name = ""
+    for spec in CLASS_ABBREVIATIONS:
+        if class_name in CLASS_ABBREVIATIONS[spec]:
+            kr_class_name = spec
+            break
+    if kr_class_name == "":
+        msg = await bot.edit_message(msg,
+            embed=discord.Embed(
+                title="실행 오류", color=COLOR_ERROR,
+                description="알 수 없는 직업 이름입니다."))
+        return
+
+    res = await Warcraftlogs.get_rankings(
+        region=DEFAULT_REGION,
+        class_name=kr_class_name,
+        difficulty=RAID_DIFFICULTIES["heroic"],
+        encounter=2266)
+    if not res:
+        msg = await bot.edit_message(msg,
+            embed=discord.Embed(
+                title="실행 오류", color=COLOR_ERROR,
+                description="로그 정보를 불러오는 데 실패했습니다."))
+        return
+
+    samples = list()
+    trinkets = dict()
+    for character in res["rankings"]:
+        if character["regionName"] == "KR":
+            if character["serverName"] == "":
+                continue
+            samples.append((character["serverName"].replace(" ", ""), character["name"]))
+
+    async def run(characters):
+        tasks = list()
+        for realm, name in characters:
+            tasks.append(Blizzard.get_character_info(realm, name))
+        return await asyncio.gather(*tasks)
+    samples = await run(samples)
+    samples_count = 0
+
+
+    for sample in samples:
+        if not sample:
+            continue
+        if not sample["items"]["trinket1"]["name"] in trinkets:
+            trinkets[sample["items"]["trinket1"]["name"]] = 0
+        trinkets[sample["items"]["trinket1"]["name"]] += 1
+        if not sample["items"]["trinket2"]["name"] in trinkets:
+            trinkets[sample["items"]["trinket2"]["name"]] = 0
+        trinkets[sample["items"]["trinket2"]["name"]] += 1
+        samples_count += 1
+
+    if samples_count < 10:
+        msg = await bot.edit_message(msg,
+            embed=discord.Embed(
+                title="실행 오류", color=COLOR_ERROR,
+                description="블리자드 API로부터 정보를 불러오는 데 실패했습니다."
+        ))
+        return
+    trinkets = sorted(trinkets.items(), key=lambda x:x[1], reverse=True)
+
+    recommended_trinkets = list()
+    for idx, trinket in enumerate(trinkets[:5]):
+        recommended_trinkets.append("{}. {} ({}%)".format(
+            idx+1, trinket[0], round(trinket[1]/samples_count*100, 1)))
+
+    embed = discord.Embed(
+        title="{}의 추천 장신구".format(kr_class_name), color=COLOR_INFO,
+        description="\n".join(recommended_trinkets))
+    embed.set_thumbnail(url=CLASS_ICONS[kr_class_name])
+    if CLASS_SPECS[kr_class_name] in CLASS_TANKS:
+        embed.set_footer(text="방어 전담 직업군은 단일 네임드 딜량을 기준으로 집계됩니다.")
+    elif CLASS_SPECS[kr_class_name] in CLASS_HEALS:
+        embed.set_footer(text="치유 전담 직업군은 밀집 진형 레이드 힐량을 기준으로 집계됩니다.")
+    else:
+        embed.set_footer(text="공격 전담 직업군은 단일 네임드 딜량을 기준으로 집계됩니다.")
+    msg = await bot.edit_message(msg, embed=embed)
 
 @bot.command(name="스탯", pass_context=True)
 async def _secondary_stats(ctx, class_name:str):
@@ -464,11 +542,11 @@ async def _secondary_stats(ctx, class_name:str):
         stats["특화"] += sample["stats"]["masteryRating"]
         stats["유연"] += sample["stats"]["versatility"]
 
-    if samples_count < 1:
-        msg = await client.edit_message(msg,
+    if samples_count < 10:
+        msg = await bot.edit_message(msg,
             embed=discord.Embed(
                 title="실행 오류", color=COLOR_ERROR,
-                description="샘플의 개수가 부족하여 스탯 우선순위를 계산할 수 없습니다."
+                description="블리자드 API로부터 정보를 불러오는 데 실패했습니다."
         ))
         return
     stats = sorted(stats.items(), key=lambda x:x[1], reverse=True)
