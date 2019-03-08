@@ -1,0 +1,13 @@
+{
+    "discord": {
+        "main": "",
+        "beta": ""
+    },
+    "warcraftlogs": {
+        "token": ""
+    },
+    "blizzard": {
+        "id": "",
+        "secret": ""
+    }
+}
