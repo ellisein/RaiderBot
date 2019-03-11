@@ -601,7 +601,7 @@ async def _secondary_stats(ctx, class_name:str):
     msg = await bot.edit_message(msg, embed=embed)
 
 @bot.command(name="토큰", pass_context=True)
-async def _secondary_stats(ctx):
+async def _token_price(ctx):
     msg = await bot.send_message(ctx.message.channel,
         embed=discord.Embed(
             title="불러오는 중", color=COLOR_WAIT,
