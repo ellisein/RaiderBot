@@ -620,6 +620,7 @@ async def _secondary_stats(ctx):
         description="{} 기준: **{}**골드".format(
             datetime.fromtimestamp(int(res["last_updated_timestamp"] / 1000)),
             int(res["price"] / 10000)))
+    embed.set_footer(text="아래 그래프는 최근 72시간 동안의 토큰 가격 변화 그래프입니다.")
     msg = await bot.edit_message(msg, embed=embed)
 
     recent_data = tokenData.read(num=3*72) # for recent 72 hours
@@ -643,4 +644,4 @@ async def background_task():
 if __name__ == "__main__":
     keys = utils.get_keys()
     bot.loop.create_task(background_task())
-    bot.run(keys["discord"]["beta"])
+    bot.run(keys["discord"]["main"])
