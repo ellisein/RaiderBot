@@ -620,7 +620,9 @@ async def _token_price(ctx):
     for data in recent_data:
         tokenGraph.add(data["time"], data["price"])
     tokenGraph.save()
-    max_price = max([x["price"] for x in recent_data])
+    recent_price = [x["price"] for x in recent_data]
+    recent_price.append(int(res["price"] / 10000))
+    max_price = max(recent_price)
 
     embed = discord.Embed(
         title="한국 서버 토큰 시세", color=COLOR_INFO,
