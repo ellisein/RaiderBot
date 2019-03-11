@@ -616,6 +616,7 @@ async def _secondary_stats(ctx):
         return
 
     recent_data = tokenData.read(num=3*72) # for recent 72 hours
+    tokenGraph.clear()
     for data in recent_data:
         tokenGraph.add(data["time"], data["price"])
     tokenGraph.save()

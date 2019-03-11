@@ -14,7 +14,7 @@ class TokenGraph:
     def __init__(self):
         self._fig = matplotlib.pyplot.figure(figsize=(8,4))
         self._ax = self._fig.add_subplot(1, 1, 1)
-        self._ax.set_ylim([200000, 300000])
+        #self._ax.set_ylim([200000, 300000])
         self.clear()
 
     def add(self, time, price):
@@ -27,6 +27,7 @@ class TokenGraph:
 
     def save(self):
         _data_x_converted = matplotlib.dates.date2num(self._data_x)
+        self._ax.clear()
         self._ax.plot_date(_data_x_converted, self._data_y,
                            linestyle="solid", marker=None, color=GRAPH_COLOR)
         matplotlib.pyplot.xticks(rotation=70)
