@@ -12,8 +12,9 @@ GRAPH_FILENAME = "token.png"
 
 class TokenGraph:
     def __init__(self):
-        self._fig = matplotlib.pyplot.figure()
+        self._fig = matplotlib.pyplot.figure(figsize=(8,4))
         self._ax = self._fig.add_subplot(1, 1, 1)
+        self._ax.set_ylim([200000, 300000])
         self.clear()
 
     def add(self, time, price):
@@ -55,12 +56,3 @@ class TokenData:
             converted.append({"time": datetime.fromtimestamp(int(s[0])),
                               "price": int(s[1])})
         return converted
-
-
-if __name__ == "__main__":
-    graph = TokenPrice()
-    graph.add(datetime.fromtimestamp(1552282357), 100)
-    graph.add(datetime.fromtimestamp(1552282400), 200)
-    graph.add(datetime.fromtimestamp(1552282550), 300)
-    graph.add(datetime.fromtimestamp(1552282570), 400)
-    graph.save()

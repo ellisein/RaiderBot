@@ -615,19 +615,21 @@ async def _secondary_stats(ctx):
                 description="토큰 시세 정보를 불러오는 데 실패했습니다."))
         return
 
-    embed = discord.Embed(
-        title="한국 서버 토큰 시세", color=COLOR_INFO,
-        description="{} 기준: **{}**골드".format(
-            datetime.fromtimestamp(int(res["last_updated_timestamp"] / 1000)),
-            int(res["price"] / 10000)))
-    embed.set_footer(text="아래 그래프는 최근 72시간 동안의 토큰 가격 변화 그래프입니다.")
-    msg = await bot.edit_message(msg, embed=embed)
-
     recent_data = tokenData.read(num=3*72) # for recent 72 hours
     for data in recent_data:
         tokenGraph.add(data["time"], data["price"])
     tokenGraph.save()
-    await bot.send_file(ctx.message.channel, token_price.GRAPH_FILENAME)    
+    max_price = max([x["price"] for x in recent_data])
+
+    embed = discord.Embed(
+        title="한국 서버 토큰 시세", color=COLOR_INFO,
+        description="{} 기준: **{}**골드\n최근 72시간 최고가격: **{}**골드".format(
+            datetime.fromtimestamp(int(res["last_updated_timestamp"] / 1000)),
+            int(res["price"] / 10000), max_price))
+    embed.set_footer(text="아래 그래프는 최근 72시간 동안의 토큰 가격 변화 그래프입니다.")
+    msg = await bot.edit_message(msg, embed=embed)
+
+    await bot.send_file(ctx.message.channel, token_price.GRAPH_FILENAME)
 
 async def background_task():
     await bot.wait_until_ready()
