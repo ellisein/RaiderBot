@@ -7,10 +7,13 @@ from discord.ext import commands
 
 import utils
 from params import *
-from api import RaiderIO, Blizzard, Warcraftlogs, Bloodmallet
+from api import RaiderIO, Blizzard, Warcraftlogs
+import token_price
 
 
 bot = commands.Bot(command_prefix="!")
+tokenGraph = token_price.TokenGraph()
+tokenData = token_price.TokenData()
 
 @bot.event
 async def on_ready():
@@ -597,7 +600,47 @@ async def _secondary_stats(ctx, class_name:str):
         embed.set_footer(text="공격 전담 직업군은 단일 네임드 딜량을 기준으로 집계됩니다.")
     msg = await bot.edit_message(msg, embed=embed)
 
+@bot.command(name="토큰", pass_context=True)
+async def _secondary_stats(ctx):
+    msg = await bot.send_message(ctx.message.channel,
+        embed=discord.Embed(
+            title="불러오는 중", color=COLOR_WAIT,
+            description="토큰 시세 정보를 불러오는 중입니다."))
+
+    res = await Blizzard.get_token_price()
+    if not res:
+        msg = await bot.edit_message(msg,
+            embed=discord.Embed(
+                title="실행 오류", color=COLOR_ERROR,
+                description="토큰 시세 정보를 불러오는 데 실패했습니다."))
+        return
+
+    embed = discord.Embed(
+        title="한국 서버 토큰 시세", color=COLOR_INFO,
+        description="{} 기준: **{}**골드".format(
+            datetime.fromtimestamp(int(res["last_updated_timestamp"] / 1000)),
+            int(res["price"] / 10000)))
+    msg = await bot.edit_message(msg, embed=embed)
+
+    recent_data = tokenData.read(num=3*72) # for recent 72 hours
+    for data in recent_data:
+        tokenGraph.add(data["time"], data["price"])
+    tokenGraph.save()
+    await bot.send_file(ctx.message.channel, token_price.GRAPH_FILENAME)    
+
+async def background_task():
+    await bot.wait_until_ready()
+    while not bot.is_closed:
+        res = await Blizzard.get_token_price()
+        try:
+            time = int(res["last_updated_timestamp"] / 1000)
+            price = int(res["price"] / 10000)
+            tokenData.write(time, price)
+        finally:
+            await asyncio.sleep(60 * 20) # every 20 minutes
+
 
 if __name__ == "__main__":
     keys = utils.get_keys()
+    bot.loop.create_task(background_task())
     bot.run(keys["discord"]["beta"])

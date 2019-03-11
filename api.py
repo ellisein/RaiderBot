@@ -1,6 +1,7 @@
 import asyncio
 import aiohttp
 from urllib import parse
+from datetime import datetime, timedelta
 
 import utils
 from params import *
@@ -43,13 +44,17 @@ class RaiderIO:
 
 
 class Blizzard:
-    BASE = "https://kr.api.blizzard.com/wow"
+    BASE = "https://kr.api.blizzard.com"
     OAUTH_BASE = "https://kr.battle.net/oauth/token"
     THUBNAIL_BASE = "https://render-kr.worldofwarcraft.com/character"
     ACCESS_TOKEN = ""
+    last_updated = None
 
     @classmethod
     async def change_access_token(cls):
+        if cls.last_updated:
+            if datetime.now() - cls.last_updated < timedelta(0, 60, 0):
+                return True
         query = "?grant_type=client_credentials" \
                 + "&client_id={}".format(utils.get_keys()["blizzard"]["id"]) \
                 + "&client_secret={}".format(utils.get_keys()["blizzard"]["secret"])
@@ -59,6 +64,7 @@ class Blizzard:
                 if response.status == 200:
                     token = await response.json()
                     cls.ACCESS_TOKEN = token["access_token"]
+                    cls.last_updated = datetime.now()
                     return True
                 else:
                     return False
@@ -78,7 +84,7 @@ class Blizzard:
             return None
         query = "?access_token={}".format(cls.ACCESS_TOKEN) \
                 + "&fields=items,stats,talents,guild"
-        url = encode("{}/character/{}/{}".format(cls.BASE, REALMS[realm], name), query)
+        url = encode("{}/wow/character/{}/{}".format(cls.BASE, REALMS[realm], name), query)
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 if response.status == 200:
@@ -92,7 +98,7 @@ class Blizzard:
             return None
         query = "?access_token={}".format(cls.ACCESS_TOKEN) \
                 + "&fields=members"
-        url = encode("{}/guild/{}/{}".format(cls.BASE, REALMS[realm], name), query)
+        url = encode("{}/wow/guild/{}/{}".format(cls.BASE, REALMS[realm], name), query)
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 if response.status == 200:
@@ -105,7 +111,21 @@ class Blizzard:
         if not await cls.change_access_token():
             return None
         query = "?access_token={}".format(cls.ACCESS_TOKEN)
-        url = encode("{}/auction/data/{}".format(cls.BASE, REALMS[realm]), query)
+        url = encode("{}/wow/auction/data/{}".format(cls.BASE, REALMS[realm]), query)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    return None
+
+    @classmethod
+    async def get_token_price(cls):
+        if not await cls.change_access_token():
+            return None
+        query = "?access_token={}".format(cls.ACCESS_TOKEN) \
+                + "&namespace=dynamic-kr&locale=ko_KR"
+        url = encode("{}/data/wow/token/index".format(cls.BASE), query)
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 if response.status == 200:
@@ -118,7 +138,7 @@ class Blizzard:
         if not await cls.change_access_token():
             return None
         query = "?access_token={}".format(cls.ACCESS_TOKEN)
-        url = encode("{}/spell/{}".format(cls.BASE, spell_id), query)
+        url = encode("{}/wow/spell/{}".format(cls.BASE, spell_id), query)
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 if response.status == 200:
@@ -159,7 +179,3 @@ class Warcraftlogs:
                     return await response.json()
                 else:
                     return None
-
-
-class Bloodmallet:
-    pass
