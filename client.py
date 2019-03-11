@@ -17,12 +17,21 @@ async def on_ready():
     await bot.change_presence(game=discord.Game(name="World of Warcraft"))
     print("Logged in as {}".format(bot.user.name))
 
-@bot.command(name="명령어", pass_context=True)
-async def _command(ctx):
+@bot.event
+async def on_command_error(error, ctx):
     await bot.send_message(ctx.message.channel,
         embed=discord.Embed(
-            title="명령어", color=COLOR_INFO,
-            description=", ".join(COMMANDS)))
+            title="명령어 오류", color=COLOR_ERROR,
+            description=str(error)))
+
+@bot.command(name="명령어", pass_context=True)
+async def _command(ctx):
+    commands = ["!{}".format(c) for c in bot.commands.keys()]
+    commands.remove("!help")
+    await bot.send_message(ctx.message.channel,
+        embed=discord.Embed(
+            title="사용 가능한 명령어", color=COLOR_INFO,
+            description=", ".join(commands)))
 
 @bot.command(name="캐릭터", pass_context=True)
 async def _character(ctx, character_name:str):
@@ -591,4 +600,4 @@ async def _secondary_stats(ctx, class_name:str):
 
 if __name__ == "__main__":
     keys = utils.get_keys()
-    bot.run(keys["discord"]["main"])
+    bot.run(keys["discord"]["beta"])

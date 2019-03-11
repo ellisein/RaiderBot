@@ -1,19 +1,3 @@
-# Commands
-
-COMMANDS = [
-    "!명령어",
-    "!캐릭터",
-    "!경매장",
-    "!어픽스",
-    "!주차",
-    "!로그",
-    "!특성",
-    "!아제특성",
-    "!장신구",
-    "!스탯",
-]
-
-
 # User-defined Constants
 
 DEFAULT_REGION = "kr"
