@@ -135,8 +135,8 @@ async def _character(ctx, character_name:str):
 async def _auction(ctx):
     msg = await bot.send_message(ctx.message.channel,
         embed=discord.Embed(
-            title="개발중", color=COLOR_INFO,
-            description="아직 명령어가 추가되지 않았습니다."))
+            title="명령어 사용불가", color=COLOR_INFO,
+            description="현재 블리자드의 경매장 서버가 작동하지 않아 명령어를 사용할 수 없습니다."))
     return
 
     msg = await bot.send_message(ctx.message.channel,
@@ -178,9 +178,21 @@ async def _affixes(ctx):
                 description="쐐기던전 어픽스 정보를 불러오는 데 실패했습니다."))
         return
 
-    embed = discord.Embed(title="이번주 쐐기던전 어픽스", color=COLOR_INFO, description="")
+    affixes = list()
+    affixes_next = ["알수없음"]
+    embed = discord.Embed(title="이번주 쐐기던전 어픽스",
+                          color=COLOR_INFO, description="")
     for affix in res["affix_details"]:
         embed.add_field(name=affix["name"], value=affix["description"])
+        affixes.append(affix["name"])
+    for idx, rot in enumerate(MYTHIC_PLUS_ROTATION):
+        if rot == affixes[:3]:
+            if idx >= len(MYTHIC_PLUS_ROTATION):
+                affixes_next = MYTHIC_PLUS_ROTATION[0]
+            else:
+                affixes_next = MYTHIC_PLUS_ROTATION[idx+1]
+            break
+    embed.set_footer(text="*다음주 쐐기던전 어픽스: {}".format(" ".join(affixes_next)))
     msg = await bot.edit_message(msg, embed=embed)
 
 @bot.command(name="주차", pass_context=True)
